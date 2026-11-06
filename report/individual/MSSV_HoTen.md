@@ -10,21 +10,45 @@
 
 | Tệp | Có? |
 | --- | --- |
-| [`day01_lab.ipynb`](day01_lab.ipynb) — notebook đã chạy, còn output | ☐ |
-| [`lab1_report.json`](lab1_report.json) — do ô "Báo cáo cuối" sinh ra | ☐ |
-| [`hand_calc.jpg`](hand_calc.jpg) — ảnh tính tay có các bước | ☐ |
+| [`day01_lab.ipynb`](day01_lab.ipynb) — notebook đã chạy, còn output | Y |
+| [`lab1_report.json`](lab1_report.json) — do ô "Báo cáo cuối" sinh ra | Y |
+| [`hand_calc.jpg`](hand_calc.jpg) — ảnh tính tay có các bước | Y |
 
 ## 2. Kết quả chính
 
-*Chép bảng so sánh cuối Phần 5 (F1 test, F1 SUB 40, p95 ms/tin, USD/1k tin) của chính bạn.*
+                                F1 test thường (SUB)  F1 50 case khó  \
+1. BoW + LogReg                                0.857           0.333   
+2. BoW + MLP                                   0.947           0.462   
+3a. Emb + kNN                                  0.974           0.764   
+3b. Emb + LogReg                               0.974           0.640   
+3c. Emb + MLP head                             0.974           0.667   
+4a. LLM nhỏ zero-shot                          0.000           0.000   
+4d. LLM nhỏ + prompt phòng thủ                 0.000           0.000   
+
+                                acc 50 case khó  
+1. BoW + LogReg                            0.52  
+2. BoW + MLP                               0.58  
+3a. Emb + kNN                              0.74  
+3b. Emb + LogReg                           0.64  
+3c. Emb + MLP head                         0.66  
+4a. LLM nhỏ zero-shot                      0.42  
+4d. LLM nhỏ + prompt phòng thủ             0.42  
 
 ## 3. Dự đoán và thực tế
 
-*Chọn 3 dự đoán `predict(...)` lệch nhiều nhất so với kết quả. Mỗi cái: bạn đoán gì, ra gì, vì sao lệch.*
-
+| Dự đoán | Tôi đoán gì? | Kết quả thực tế | Vì sao lệch? |
+|---|---|---|---|
+| **`llm_models`** | Model lớn đắt hơn khoảng **1,5 lần**. | Chi phí ước tính **0,00316 USD / 0,00032 USD ≈ 9,9 lần**. | Tôi chưa tính theo đơn giá token và lượng token thực tế của từng model; không thể suy tỷ lệ chi phí chỉ từ kích thước model. |
+| **`dl_relu`** | Bỏ ReLU thì F1 gần LogReg Phần 1, khoảng **0.880**. | Mạng không ReLU đạt **F1 = 0.940**, cao hơn **0.060**. | Hai lớp Linear tương đương một lớp về khả năng biểu diễn, nhưng cách huấn luyện khác nhau: mạng dùng Adam và mini-batch, còn LogReg dùng gradient descent toàn bộ dữ liệu, nên kết quả tối ưu có thể khác. |
+| **`hard_eval`** | Accuracy của BoW+LogReg khoảng **55–70%**, BoW+MLP khoảng **60–75%**. | Accuracy lần lượt chỉ **52%** và **58%**. | Tôi đánh giá quá cao khả năng tổng quát hóa. Bộ test khó chứa spam né từ khóa và viết như hội thoại, trong khi BoW phụ thuộc nhiều vào các từ đã gặp khi train. |
 ## 4. Phân tích 50 case khó
 
-*Model nào tụt nhiều nhất, ở nhóm case nào? Nêu 2 case cụ thể và cơ chế khiến model sai.*
+
+BoW + LogReg tụt nhiều nhất: F1 từ 0.857 trên SUB 40 xuống 0.333 trên 50 case khó, giảm khoảng 0.524. Model gặp khó nhất ở nhóm spam giọng tự nhiên, chỉ đúng 1/10 case (10%); tiếp theo là thao túng/lừa đảo (12,5%) và né từ khóa (16,7%).
+| Case | Nội dung tiêu biểu | Cơ chế khiến model sai |
+|---|---|---|
+| **#12 – Spam giọng tự nhiên** | “my friend gave me your number… looking for someone to chat with… check my profile at meetlocal.club” | Tin nhắn dùng giọng lịch sự, giả làm người quen và ít từ khóa spam nổi bật. BoW dựa vào các từ riêng lẻ nên khó nhận ra ý định dụ người nhận truy cập trang hẹn hò. |
+| **#14 – Spam giọng tự nhiên** | “working from home and making about £300 a day… no experience needed… just text me back” | Nội dung được viết như lời chia sẻ cá nhân. BoW khó kết hợp các dấu hiệu “thu nhập cao, không cần kinh nghiệm, yêu cầu liên hệ” thành dấu hiệu lừa việc làm, nên bỏ sót spam. |
 
 ## 5. Thử thách cá nhân
 
@@ -32,8 +56,12 @@
 
 ## 6. Phương án cho sản phẩm thật
 
-*Với yêu cầu p95 < 50 ms/tin cho 10 triệu SMS/ngày: chọn phương án nào, dẫn số liệu nào, chấp nhận đánh đổi gì.*
+3c. Encoder MiniLM + MLP head làm phương án chính: F1 test = 0.959, F1 SUB 40 = 0.974, p95 = 22.068 ms/tin, đáp ứng giới hạn 50 ms. Throughput đo được 153.868 tin/giây, cao hơn mức trung bình cần thiết khoảng 116 tin/giây cho 10 triệu SMS/ngày.
+
+Đánh đổi là tốn tài nguyên và suy luận chậm hơn BoW, nhưng chất lượng tốt hơn. Chi phí API bằng 0 trong bảng vẫn chưa tính chi phí máy chủ. Ngoài ra, F1 trên 50 case khó chỉ đạt 0.667, nên cần bổ sung dữ liệu spam mới trước khi triển khai rộng.
 
 ## 7. AI log và điều đã học
 
-*Mỗi lần dùng AI: hỏi gì, nhận gì, bạn sửa gì. Sau đó 2–3 câu: điều bạn hiểu ra hôm nay mà trước đó chưa hiểu.*
+| Phần | Bạn hỏi AI gì (prompt) | AI trả lời/viết gì | Bạn đã sửa / kiểm chứng gì |
+|---|---|---|---|
+| Phần 3-4 | Công thức toán học tổng quát (3), hỗ trợ viết test case, kết luận và check code huấn luyện (4)| AI bổ sung code, giải thích và case tham khảo | Sửa code AI feedback, chuẩn hóa lại kiểu dữ liệu, kiếm chứng kết quả test |
