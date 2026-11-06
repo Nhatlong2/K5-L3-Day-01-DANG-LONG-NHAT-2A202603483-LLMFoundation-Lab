@@ -50,7 +50,15 @@ BoW + LogReg tụt nhiều nhất: F1 từ 0.857 trên SUB 40 xuống 0.333 trê
 
 ## 5. Thử thách cá nhân
 
-*Đề theo SEED của bạn, cách làm, kết quả, giải thích.*
+đề số 2: giảm vocab xuống 100 từ, tăng lên 5000 từ, huấn luyện lại và so sánh F1.
+
+Cách làm: Xây hai từ điển bằng build_vocab(texts_tr, max_size=...), vector hóa dữ liệu rồi huấn luyện Logistic Regression. Giữ nguyên tập train/test và tham số huấn luyện để so sánh công bằng.
+Vocab	Accuracy	Precision	Recall	F1
+100	0.9510	0.9506	0.6937	0.8021
+5000	0.9677	0.9886	0.7838	0.8744
+
+
+Giải thích: Khi tăng vocab, F1 tăng 0.0723. Từ điển 100 từ bỏ qua nhiều từ hữu ích; vocab 5000 giữ được nhiều tín hiệu phân biệt spam hơn, giúp tăng cả precision và recall. Đổi lại, số đặc trưng lớn hơn làm tăng bộ nhớ và chi phí tính toán. Trong thí nghiệm này, vocab 5000 hiệu quả hơn; kích thước phù hợp nên được lựa chọn bằng tập validation.
 
 ## 6. Phương án cho sản phẩm thật
 
